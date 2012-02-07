@@ -1318,6 +1318,7 @@ void show_advanced_menu()
                             "partition sdcard",
                             "partition external sdcard",
                             "partition internal sdcard",
+                            "clear NSTools settings",
                             NULL
     };
 
@@ -1391,6 +1392,16 @@ void show_advanced_menu()
             case 8:
                 partition_sdcard("/emmc");
                 break;
+            case 10:
+            {
+                if (confirm_selection( "Confirm clearing?", "Yes - Clear NSTools settings")) {
+			ensure_path_mounted("/data");
+			ui_print("Clearing NSTools settings...\n");
+			__system("rm /data/data/mobi.cyann.nstools/shared_prefs/mobi.cyann.nstools_preferences.xml");
+			ui_print("Done!\n");
+		}
+                break;
+            }            
         }
     }
 }
