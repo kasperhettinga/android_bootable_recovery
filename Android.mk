@@ -28,14 +28,14 @@ LOCAL_MODULE := recovery
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
-#ifdef I_AM_KOUSH
-#RECOVERY_NAME := ClockworkMod Recovery
-#LOCAL_CFLAGS += -DI_AM_KOUSH
-#else
-#ifndef RECOVERY_NAME
+ifdef I_AM_KOUSH
+RECOVERY_NAME := ClockworkMod Recovery
+LOCAL_CFLAGS += -DI_AM_KOUSH
+else
+ifndef RECOVERY_NAME
 RECOVERY_NAME := Mackay CWM-based Recovery
-#endif
-#endif
+endif
+endif
 
 RECOVERY_VERSION := $(RECOVERY_NAME) v6.0.2.7
 
