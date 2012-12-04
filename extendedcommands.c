@@ -568,7 +568,7 @@ void show_mount_usb_storage_menu()
         return;
 
     static char* headers[] = {  "USB Mass Storage device",
-                                "Leaving this menu unmount",
+                                "Leaving this menu unmounts",
                                 "your SD card from your PC.",
                                 "",
                                 NULL
@@ -969,9 +969,7 @@ void show_nandroid_advanced_restore_menu(const char* path)
     }
 
     static char* advancedheaders[] = {  "Choose an image to restore",
-                                "",
-                                "Choose an image to restore",
-                                "first. The next menu will",
+                                "first. The next menu will give",
                                 "you more options.",
                                 "",
                                 NULL
@@ -1290,10 +1288,9 @@ void show_advanced_menu()
     static char* headers[] = {  "Advanced Menu",
                                 "",
                                 NULL
-                             };
+    };
 
-    static char* list[] = { "reboot recovery",
-                            "wipe dalvik cache",
+    static char* list[] = { "wipe dalvik cache",
                             "report error",
                             "key test",
                             "show log",
@@ -1307,13 +1304,13 @@ void show_advanced_menu()
     };
 
     if (!can_partition("/sdcard")) {
-        list[8] = NULL;
+        list[7] = NULL;
     }
     if (!can_partition("/external_sd")) {
-        list[9] = NULL;
+        list[8] = NULL;
     }
     if (!can_partition("/emmc")) {
-        list[10] = NULL;
+        list[9] = NULL;
     }
 
     for (;;)
@@ -1324,9 +1321,6 @@ void show_advanced_menu()
         switch (chosen_item)
         {
             case 0:
-                android_reboot(ANDROID_RB_RESTART2, 0, "recovery");
-                break;
-            case 1:
                 if (0 != ensure_path_mounted("/data"))
                     break;
                 ensure_path_mounted("/sd-ext");
@@ -1339,10 +1333,10 @@ void show_advanced_menu()
                 }
                 ensure_path_unmounted("/data");
                 break;
-            case 2:
+            case 1:
                 handle_failure(1);
                 break;
-            case 3:
+            case 2:
             {
                 ui_print("Outputting key codes.\n");
                 ui_print("Go back to end debugging.\n");
@@ -1357,17 +1351,17 @@ void show_advanced_menu()
                 while (action != GO_BACK);
                 break;
             }
-            case 4:
+            case 3:
                 ui_printlogtail(12);
                 break;
-            case 5:
+            case 4:
                 ensure_path_mounted("/system");
                 ensure_path_mounted("/data");
                 ui_print("Fixing permissions...\n");
                 __system("fix_permissions");
                 ui_print("Done!\n");
                 break;
-            case 6:
+            case 5:
             {
                 if (confirm_selection( "Confirm clearing?", "Yes - Clear NSTools settings")) {
 			ensure_path_mounted("/data");
@@ -1377,7 +1371,7 @@ void show_advanced_menu()
 			}
                 break;
             }
-            case 7:
+            case 6:
             {
                 if (confirm_selection( "Confirm clearing?", "Yes - Clear init.d")) {
 			ensure_path_mounted("/system");
@@ -1387,18 +1381,120 @@ void show_advanced_menu()
 			}
                 break;
             }
-            case 8:
+            case 7:
                 partition_sdcard("/sdcard");
                 break;
-            case 9:
+            case 8:
                 partition_sdcard("/external_sd");
                 break;
-            case 10:
+            case 9:
                 partition_sdcard("/emmc");
                 break;
         }
     }
 }
+
+void show_reboot_menu()
+{
+    static char* headers[] = {  "Reboot Menu",
+                                "",
+                                NULL
+    };
+
+    static char* list[] = { "reboot system",
+                            "reboot recovery",
+#if defined BOARD_HAS_FASTBOOT && !defined BOARD_HAS_ODIN
+                            "reboot to bootloader",
+                            "power off",
+#elif defined BOARD_HAS_ODIN && !defined BOARD_HAS_FASTBOOT
+                            "reboot to odin mode",
+                            "power off",
+#elif defined BOARD_HAS_FASTBOOT && defined BOARD_HAS_ODIN
+                            "reboot to bootloader",
+                            "reboot to odin mode",
+                            "power off",
+#else
+                            "power off",
+#endif
+                            NULL
+    };
+
+    for (;;)
+    {
+        int chosen_item = get_filtered_menu_selection(headers, list, 0, 0, sizeof(list) / sizeof(char*));
+        if (chosen_item == GO_BACK)
+            break;
+        switch (chosen_item)
+        {
+            case 0:
+            {
+                ui_print("Rebooting...\n");
+                android_reboot(ANDROID_RB_RESTART, 0, 0);
+                return;
+            }
+            case 1:
+            {
+                ui_print("Rebooting recovery...\n");
+                android_reboot(ANDROID_RB_RESTART2, 0, "recovery");
+                break;
+            }
+#if defined BOARD_HAS_FASTBOOT && !defined BOARD_HAS_ODIN
+            case 2:
+            {
+                ui_print("Rebooting to bootloader...\n");
+                android_reboot(ANDROID_RB_RESTART2, 0, "bootloader");
+                break;
+            }
+            case 3:
+            {
+                ui_print("Shutting down...\n");
+                android_reboot(ANDROID_RB_POWEROFF, 0, 0);
+                return;
+            }
+#elif defined BOARD_HAS_ODIN && !defined BOARD_HAS_FASTBOOT
+            case 2:
+            {
+                ui_print("Rebooting to odin mode...\n");
+                android_reboot(ANDROID_RB_RESTART2, 0, "download");
+                break;
+            }
+            case 3:
+            {
+                ui_print("Shutting down...\n");
+                android_reboot(ANDROID_RB_POWEROFF, 0, 0);
+                return;
+            }
+#elif defined BOARD_HAS_FASTBOOT && defined BOARD_HAS_ODIN
+            case 2:
+            {
+                ui_print("Rebooting to bootloader...\n");
+                android_reboot(ANDROID_RB_RESTART2, 0, "bootloader");
+                break;
+            }
+            case 3:
+            {
+                ui_print("Rebooting to odin mode...\n");
+                android_reboot(ANDROID_RB_RESTART2, 0, "download");
+                return;
+            }
+            case 4:
+            {
+                ui_print("Shutting down...\n");
+                android_reboot(ANDROID_RB_POWEROFF, 0, 0);
+                return;
+            }
+#else
+            case 2:
+            {
+                ui_print("Shutting down...\n");
+                android_reboot(ANDROID_RB_POWEROFF, 0, 0);
+                return;
+            }
+#endif
+        }
+    }
+}
+
 void write_fstab_root(char *path, FILE *file)
 {
     Volume *vol = volume_for_path(path);
