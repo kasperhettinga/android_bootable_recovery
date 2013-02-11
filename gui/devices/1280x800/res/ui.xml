@@ -146,7 +146,7 @@
 		<variable name="fileselector_header_background" value="#202020" />
 		<variable name="fileselector_header_textcolor" value="#AAAAAA" />
 		<variable name="fileselector_header_separatorcolor" value="#303030" />
-		<variable name="fileselector_header_separatorheight" value="3" />
+		<variable name="fileselector_header_separatorheight" value="0" />
 		<variable name="fileselector_separatorcolor" value="#303030" />
 		<variable name="fileselector_separatorheight" value="2" />
 		<variable name="fileselector_background" value="#303030" />
