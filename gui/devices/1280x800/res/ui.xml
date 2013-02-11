@@ -145,9 +145,9 @@
 		<variable name="fileselector_install_height" value="510" />
 		<variable name="fileselector_header_background" value="#202020" />
 		<variable name="fileselector_header_textcolor" value="#AAAAAA" />
-		<variable name="fileselector_header_separatorcolor" value="#33B5E5" />
+		<variable name="fileselector_header_separatorcolor" value="#303030" />
 		<variable name="fileselector_header_separatorheight" value="3" />
-		<variable name="fileselector_separatorcolor" value="#505050" />
+		<variable name="fileselector_separatorcolor" value="#303030" />
 		<variable name="fileselector_separatorheight" value="2" />
 		<variable name="fileselector_background" value="#303030" />
 		<variable name="fileselector_highlight_color" value="#505050" />
@@ -216,7 +216,7 @@
 			<object type="text" color="%text_color%">
 				<font resource="font" />
 				<placement x="250" y="5" />
-				<text>Team Win Recovery Project (twrp)  v%tw_version%</text>
+				<text>Infamous Recovery (based on TWRP v%tw_version%)</text>
 			</object>
 
 			<object type="text" color="%text_color%">
