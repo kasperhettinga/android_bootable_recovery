@@ -152,6 +152,9 @@
 #define TW_SDEXT_DISABLE_EXT4       "tw_sdext_disable_ext4"
 #define TW_MILITARY_TIME            "tw_military_time"
 
+// App folder
+#define TW_APP_FOLDER_VAR     		"tw_app_folder"
+
 // Also used:
 //   tw_boot_is_mountable
 //   tw_system_is_mountable

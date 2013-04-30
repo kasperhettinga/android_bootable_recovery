@@ -574,6 +574,18 @@ void DataManager::SetBackupFolder()
 	}
 }
 
+void DataManager::SetAdditionalFolders(string storage_path) {
+	string app_path;
+
+	if (storage_path.empty())
+		app_path = GetCurrentStoragePath();
+	else
+		app_path = storage_path;
+
+	app_path += "/tmp";
+	SetValue(TW_APP_FOLDER_VAR, app_path, 0);
+}
+
 void DataManager::SetDefaultValues()
 {
 	string str, path;
