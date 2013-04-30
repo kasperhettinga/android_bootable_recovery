@@ -60,6 +60,7 @@ public:
 	static void SetDefaultValues();
 	static void Output_Version(void); // Outputs the version to a file in the TWRP folder
 	static void ReadSettingsFile(void);
+	static void SetAdditionalFolders(string storage_path); // App path
 
 	static string GetCurrentStoragePath(void);
 	static string& CGetCurrentStoragePath();
