@@ -1319,7 +1319,6 @@ void show_advanced_menu()
                             "report error",
                             "key test",
                             "show log",
-                            "fix permissions",
                             "clear NSTools settings",
                             "clear init.d",
                             "partition sdcard",
@@ -1329,13 +1328,13 @@ void show_advanced_menu()
     };
 
     if (!can_partition("/sdcard")) {
-        list[8] = NULL;
+        list[7] = NULL;
     }
     if (!can_partition("/external_sd")) {
-        list[9] = NULL;
+        list[8] = NULL;
     }
     if (!can_partition("/emmc")) {
-        list[10] = NULL;
+        list[9] = NULL;
     }
 
     for (;;)
@@ -1383,13 +1382,6 @@ void show_advanced_menu()
                 ui_printlogtail(12);
                 break;
             case 5:
-                ensure_path_mounted("/system");
-                ensure_path_mounted("/data");
-                ui_print("Fixing permissions...\n");
-                __system("fix_permissions");
-                ui_print("Done!\n");
-                break;
-            case 6:
             {
                 if (confirm_selection( "Confirm clearing?", "Yes - Clear NSTools settings")) {
 			ensure_path_mounted("/data");
@@ -1399,7 +1391,7 @@ void show_advanced_menu()
 			}
                 break;
             }
-            case 7:
+            case 6:
             {
                 if (confirm_selection( "Confirm clearing?", "Yes - Clear init.d")) {
 			ensure_path_mounted("/system");
@@ -1409,13 +1401,13 @@ void show_advanced_menu()
 			}
                 break;
             }
-            case 8:
+            case 7:
                 partition_sdcard("/sdcard");
                 break;
-            case 9:
+            case 8:
                 partition_sdcard("/external_sd");
                 break;
-            case 10:
+            case 9:
                 partition_sdcard("/emmc");
                 break;
         }
