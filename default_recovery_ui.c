@@ -30,7 +30,6 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "mounts and storage",
                        "advanced",
                        "AROMA Filemanager",
-                       "power off",
                        NULL };
 
 void device_ui_init(UIParameters* ui_parameters) {
