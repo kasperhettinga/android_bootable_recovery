@@ -61,10 +61,11 @@ static const struct option OPTIONS[] = {
   { NULL, 0, NULL, 0 },
 };
 
+#define LAST_LOG_FILE "/cache/recovery/last_log"
+
 static const char *COMMAND_FILE = "/cache/recovery/command";
 static const char *INTENT_FILE = "/cache/recovery/intent";
 static const char *LOG_FILE = "/cache/recovery/log";
-static const char *LAST_LOG_FILE = "/cache/recovery/last_log";
 static const char *CACHE_ROOT = "/cache";
 static const char *SDCARD_ROOT = "/sdcard";
 static int allow_display_toggle = 0;
@@ -274,6 +275,21 @@ copy_log_file(const char* destination, int append) {
     }
 }
 
+// Rename last_log -> last_log.1 -> last_log.2 -> ... -> last_log.$max
+// Overwrites any existing last_log.$max.
+static void
+rotate_last_logs(int max) {
+    char oldfn[256];
+    char newfn[256];
+
+    int i;
+    for (i = max-1; i >= 0; --i) {
+        snprintf(oldfn, sizeof(oldfn), (i==0) ? LAST_LOG_FILE : (LAST_LOG_FILE ".%d"), i);
+        snprintf(newfn, sizeof(newfn), LAST_LOG_FILE ".%d", i+1);
+        // ignore errors
+        rename(oldfn, newfn);
+    }
+}
 
 // clear the recovery command and prepare to boot a (hopefully working) system,
 // copy our log file to cache as well (for the system to read), and
@@ -639,35 +655,8 @@ update_directory(const char* path, const char* unmount_when_done) {
 
 static void
 wipe_data(int confirm) {
-    if (confirm) {
-        static char** title_headers = NULL;
-
-        if (title_headers == NULL) {
-            char* headers[] = { "Confirm wipe of all user data?",
-                                "  THIS CAN NOT BE UNDONE.",
-                                "",
-                                NULL };
-            title_headers = prepend_title((const char**)headers);
-        }
-
-        char* items[] = { " No",
-                          " No",
-                          " No",
-                          " No",
-                          " No",
-                          " No",
-                          " No",
-                          " Yes -- delete all user data",   // [7]
-                          " No",
-                          " No",
-                          " No",
-                          NULL };
-
-        int chosen_item = get_menu_selection(title_headers, items, 1, 0);
-        if (chosen_item != 7) {
-            return;
-        }
-    }
+    if (confirm && !confirm_selection( "Confirm wipe of all user data?", "Yes - Wipe all user data"))
+        return;
 
     ui_print("\n-- Wiping data...\n");
     device_wipe_data();
@@ -875,6 +864,8 @@ main(int argc, char **argv) {
     load_volume_table();
     process_volumes();
     LOGI("Processing arguments.\n");
+    ensure_path_mounted(LAST_LOG_FILE);
+    rotate_last_logs(5);
     get_args(&argc, &argv);
 
     int previous_runs = 0;
