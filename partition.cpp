@@ -1,5 +1,5 @@
 /*
-	Copyright 2012 bigbiff/Dees_Troy TeamWin
+	Copyright 2013 TeamWin
 	This file is part of TWRP/TeamWin Recovery Project.
 
 	TWRP is free software: you can redistribute it and/or modify
@@ -39,6 +39,7 @@
 #include "twrp-functions.hpp"
 #include "twrpDigest.hpp"
 #include "twrpTar.hpp"
+#include "twrpDU.hpp"
 extern "C" {
 	#include "mtdutils/mtdutils.h"
 	#include "mtdutils/mounts.h"
@@ -56,6 +57,31 @@ extern "C" {
 using namespace std;
 
 extern struct selabel_handle *selinux_handle;
+
+struct flag_list {
+	const char *name;
+	unsigned flag;
+};
+
+static struct flag_list mount_flags[] = {
+	{ "noatime",    MS_NOATIME },
+	{ "noexec",     MS_NOEXEC },
+	{ "nosuid",     MS_NOSUID },
+	{ "nodev",      MS_NODEV },
+	{ "nodiratime", MS_NODIRATIME },
+	{ "ro",         MS_RDONLY },
+	{ "rw",         0 },
+	{ "remount",    MS_REMOUNT },
+	{ "bind",       MS_BIND },
+	{ "rec",        MS_REC },
+	{ "unbindable", MS_UNBINDABLE },
+	{ "private",    MS_PRIVATE },
+	{ "slave",      MS_SLAVE },
+	{ "shared",     MS_SHARED },
+	{ "sync",       MS_SYNCHRONOUS },
+	{ "defaults",   0 },
+	{ 0,            0 },
+};
 
 TWPartition::TWPartition(void) {
 	Can_Be_Mounted = false;
@@ -101,6 +127,8 @@ TWPartition::TWPartition(void) {
 	Storage_Path = "";
 	Current_File_System = "";
 	Fstab_File_System = "";
+	Mount_Flags = 0;
+	Mount_Options = "";
 	Format_Block_Size = 0;
 	Ignore_Blkid = false;
 	Retain_Layout_Version = false;
@@ -373,6 +401,38 @@ bool TWPartition::Process_Fstab_Line(string Line, bool Display_Error) {
 	return true;
 }
 
+bool TWPartition::Process_FS_Flags(string& Options, int Flags) {
+	int i;
+	char *p;
+	char *savep;
+	char fs_options[250];
+
+	strlcpy(fs_options, Options.c_str(), sizeof(fs_options));
+	Options = "";
+
+	p = strtok_r(fs_options, ",", &savep);
+	while (p) {
+		/* Look for the flag "p" in the flag list "fl"
+		* If not found, the loop exits with fl[i].name being null.
+		*/
+		for (i = 0; mount_flags[i].name; i++) {
+			if (strncmp(p, mount_flags[i].name, strlen(mount_flags[i].name)) == 0) {
+				Flags |= mount_flags[i].flag;
+				break;
+			}
+		}
+
+		if (!mount_flags[i].name) {
+			if (Options.size() > 0)
+				Options += ",";
+			Options += p;
+		}
+		p = strtok_r(NULL, ",", &savep);
+	}
+
+	return true;
+}
+
 bool TWPartition::Process_Flags(string Flags, bool Display_Error) {
 	char flags[MAX_FSTAB_LINE_LENGTH];
 	int flags_len, index = 0, ptr_len;
@@ -474,6 +534,15 @@ bool TWPartition::Process_Flags(string Flags, bool Display_Error) {
 			} else {
 				Use_Userdata_Encryption = false;
 			}
+		} else if (ptr_len > 8 && strncmp(ptr, "fsflags=", 8) == 0) {
+			ptr += 8;
+			if (*ptr == '\"') ptr++;
+
+			Mount_Options = ptr;
+			if (Mount_Options.substr(Mount_Options.size() - 1, 1) == "\"") {
+				Mount_Options.resize(Mount_Options.size() - 1);
+			}
+			Process_FS_Flags(Mount_Options, Mount_Flags);
 		} else {
 			if (Display_Error)
 				LOGERR("Unhandled flag: '%s'\n", ptr);
@@ -743,7 +812,7 @@ bool TWPartition::Find_Partition_Size(void) {
 
 			sscanf(line, "%s %lx %*lx %*lu %s", label, &size, device);
 
-			// Skip header, annotation  and blank lines
+			// Skip header, annotation	and blank lines
 			if ((strncmp(device, "/dev/", 5) != 0) || (strlen(line) < 8))
 				continue;
 
@@ -872,7 +941,7 @@ bool TWPartition::Mount(bool Display_Error) {
 			}
 			return true;
 		}
-	} else if (!exfat_mounted && mount(Actual_Block_Device.c_str(), Mount_Point.c_str(), Current_File_System.c_str(), 0, NULL) != 0) {
+	} else if (!exfat_mounted && mount(Actual_Block_Device.c_str(), Mount_Point.c_str(), Current_File_System.c_str(), Mount_Flags, Mount_Options.c_str()) != 0) {
 #ifdef TW_NO_EXFAT_FUSE
 		if (Current_File_System == "exfat") {
 			LOGINFO("Mounting exfat failed, trying vfat...\n");
@@ -881,7 +950,7 @@ bool TWPartition::Mount(bool Display_Error) {
 					LOGERR("Unable to mount '%s'\n", Mount_Point.c_str());
 				else
 					LOGINFO("Unable to mount '%s'\n", Mount_Point.c_str());
-				LOGINFO("Actual block device: '%s', current file system: '%s'\n", Actual_Block_Device.c_str(), Current_File_System.c_str());
+				LOGINFO("Actual block device: '%s', current file system: '%s', flags: 0x%8x, options: '%s'\n", Actual_Block_Device.c_str(), Current_File_System.c_str(), Mount_Flags, Mount_Options.c_str());
 				return false;
 			}
 		} else {
@@ -1446,7 +1515,7 @@ bool TWPartition::Wipe_Data_Without_Wiping_Media() {
 	if (d != NULL) {
 		struct dirent* de;
 		while ((de = readdir(d)) != NULL) {
-			if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)   continue;
+			if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)	 continue;
 			// The media folder is the "internal sdcard"
 			// The .layout_version file is responsible for determining whether 4.2 decides up upgrade
 			// the media folder for multi-user.
@@ -1487,7 +1556,10 @@ bool TWPartition::Backup_Tar(string backup_folder) {
 	DataManager::GetValue(TW_USE_COMPRESSION_VAR, use_compression);
 	tar.use_compression = use_compression;
 	//exclude Google Music Cache
-	tar.setexcl("/data/data/com.google.android.music/files");
+	vector<string> excludedirs = du.get_absolute_dirs();
+	for (int i = 0; i < excludedirs.size(); ++i) {
+		tar.setexcl(excludedirs.at(i));
+	}
 #ifndef TW_EXCLUDE_ENCRYPTED_BACKUPS
 	DataManager::GetValue("tw_encrypt_backup", use_encryption);
 	if (use_encryption && Can_Encrypt_Backup) {
@@ -1704,16 +1776,12 @@ bool TWPartition::Update_Size(bool Display_Error) {
 	if (Has_Data_Media) {
 		if (Mount(Display_Error)) {
 			unsigned long long data_media_used, actual_data;
-			Used = TWFunc::Get_Folder_Size("/data", Display_Error);
-			data_media_used = TWFunc::Get_Folder_Size("/data/media", Display_Error);
-			actual_data = Used - data_media_used;
-			Backup_Size = actual_data;
-			int bak = (int)(Backup_Size / 1048576LLU);
-			int total = (int)(Size / 1048576LLU);
-			int us = (int)(Used / 1048576LLU);
+			du.add_relative_dir("media");
+			Used = du.Get_Folder_Size("/data");
+			Backup_Size = Used;
+			int bak = (int)(Used / 1048576LLU);
 			int fre = (int)(Free / 1048576LLU);
-			int datmed = (int)(data_media_used / 1048576LLU);
-			LOGINFO("Data backup size is %iMB, size: %iMB, used: %iMB, free: %iMB, in data/media: %iMB.\n", bak, total, us, fre, datmed);
+			LOGINFO("Data backup size is %iMB, free: %iMB.\n", bak, fre);
 		} else {
 			if (!Was_Already_Mounted)
 				UnMount(false);
@@ -1721,7 +1789,7 @@ bool TWPartition::Update_Size(bool Display_Error) {
 		}
 	} else if (Has_Android_Secure) {
 		if (Mount(Display_Error))
-			Backup_Size = TWFunc::Get_Folder_Size(Backup_Path, Display_Error);
+			Backup_Size = du.Get_Folder_Size(Backup_Path);
 		else {
 			if (!Was_Already_Mounted)
 				UnMount(false);
