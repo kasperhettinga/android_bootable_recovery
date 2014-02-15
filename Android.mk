@@ -29,6 +29,8 @@ LOCAL_SRC_FILES := \
 ADDITIONAL_RECOVERY_FILES := $(shell echo $$ADDITIONAL_RECOVERY_FILES)
 LOCAL_SRC_FILES += $(ADDITIONAL_RECOVERY_FILES)
 
+LOCAL_ADDITIONAL_DEPENDENCIES += updater.fallback
+
 LOCAL_MODULE := recovery
 
 LOCAL_FORCE_STATIC_EXECUTABLE := true
@@ -44,7 +46,7 @@ RECOVERY_NAME := Mackay CWM-based Recovery
 endif
 endif
 
-RECOVERY_VERSION := $(RECOVERY_NAME) v6.0.4.6
+RECOVERY_VERSION := $(RECOVERY_NAME) v6.0.4.7
 
 LOCAL_CFLAGS += -DRECOVERY_VERSION="$(RECOVERY_VERSION)"
 RECOVERY_API_VERSION := 2
@@ -58,12 +60,6 @@ endif
 
 ifeq ($(BOARD_USE_CUSTOM_RECOVERY_FONT),)
   BOARD_USE_CUSTOM_RECOVERY_FONT := \"font_10x18.h\"
-endif
-
-ifeq ($(ENABLE_LOKI_RECOVERY),true)
-  LOCAL_CFLAGS += -DENABLE_LOKI
-  LOCAL_SRC_FILES += \
-    compact_loki.c
 endif
 
 BOARD_RECOVERY_CHAR_WIDTH := $(shell echo $(BOARD_USE_CUSTOM_RECOVERY_FONT) | cut -d _  -f 2 | cut -d . -f 1 | cut -d x -f 1)
@@ -86,6 +82,11 @@ LOCAL_C_INCLUDES += system/extras/ext4_utils system/core/fs_mgr/include external
 LOCAL_C_INCLUDES += system/vold
 
 LOCAL_STATIC_LIBRARIES += libext4_utils_static libz libsparse_static
+
+ifeq ($(ENABLE_LOKI_RECOVERY),true)
+  LOCAL_CFLAGS += -DENABLE_LOKI
+  LOCAL_STATIC_LIBRARIES += libloki_recovery
+endif
 
 # This binary is in the recovery ramdisk, which is otherwise a copy of root.
 # It gets copied there in config/Makefile.  LOCAL_MODULE_TAGS suppresses
@@ -205,6 +206,7 @@ include $(commands_recovery_local_path)/applypatch/Android.mk
 include $(commands_recovery_local_path)/utilities/Android.mk
 include $(commands_recovery_local_path)/su/Android.mk
 include $(commands_recovery_local_path)/voldclient/Android.mk
+include $(commands_recovery_local_path)/loki/Android.mk
 commands_recovery_local_path :=
 
 endif
