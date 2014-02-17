@@ -22,8 +22,7 @@ LOCAL_SRC_FILES := \
     keyboard.cpp \
     input.cpp \
     blanktimer.cpp \
-    partitionlist.cpp \
-    mousecursor.cpp
+    partitionlist.cpp
 
 ifneq ($(TWRP_CUSTOM_KEYBOARD),)
   LOCAL_SRC_FILES += $(TWRP_CUSTOM_KEYBOARD)
