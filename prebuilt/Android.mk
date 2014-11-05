@@ -40,6 +40,7 @@ RELINK_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/libext2_e2p.so
 RELINK_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/libext2fs.so
 RELINK_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/libext2_profile.so
 RELINK_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/libext2_uuid.so
+RELINK_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/libpng.so
 RELINK_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/liblog.so
 RELINK_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/libm.so
 RELINK_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/libstdc++.so
@@ -122,6 +123,9 @@ endif
 ifneq ($(wildcard system/core/reboot/Android.mk),)
     RELINK_SOURCE_FILES += $(TARGET_OUT_EXECUTABLES)/reboot
 endif
+ifneq ($(TW_DISABLE_TTF), true)
+    RELINK_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/libft2.so
+endif
 
 TWRP_AUTOGEN := $(intermediates)/teamwin
 
@@ -129,7 +133,6 @@ GEN := $(intermediates)/teamwin
 $(GEN): $(RELINK)
 $(GEN): $(RELINK_SOURCE_FILES) $(call intermediates-dir-for,EXECUTABLES,recovery)/recovery
 	$(RELINK) $(TARGET_RECOVERY_ROOT_OUT)/sbin $(RELINK_SOURCE_FILES)
-	$(RELINK) $(call intermediates-dir-for,EXECUTABLES,recovery) $(call intermediates-dir-for,EXECUTABLES,recovery)/recovery
 
 LOCAL_GENERATED_SOURCES := $(GEN)
 LOCAL_SRC_FILES := teamwin $(GEN)

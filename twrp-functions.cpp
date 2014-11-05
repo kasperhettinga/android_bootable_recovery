@@ -66,7 +66,7 @@ int TWFunc::Exec_Cmd(const string& cmd, string &result) {
 		memset(&buffer, 0, sizeof(buffer));
 		if (fgets(buffer, 128, exec) != NULL) {
 			buffer[128] = '\n';
-			buffer[129] = NULL;
+			buffer[129] = 0;
 			result += buffer;
 		}
 	}
@@ -1287,6 +1287,12 @@ void TWFunc::SetPerformanceMode(bool mode) {
 	}
 	// Some time for events to catch up to init handlers
 	usleep(500000);
+}
+
+std::string TWFunc::to_string(unsigned long value) {
+	std::ostringstream os;
+	os << value;
+	return os.str();
 }
 
 #endif // ndef BUILD_TWRPTAR_MAIN

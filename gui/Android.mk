@@ -59,6 +59,9 @@ endif
 ifeq ($(TW_OEM_BUILD), true)
     LOCAL_CFLAGS += -DTW_OEM_BUILD
 endif
+ifeq ($(TW_DISABLE_TTF), true)
+    LOCAL_CFLAGS += -DTW_DISABLE_TTF
+endif
 
 ifeq ($(DEVICE_RESOLUTION),)
 $(warning ********************************************************************************)
@@ -68,12 +71,14 @@ $(warning **********************************************************************
 $(error stopping)
 endif
 
-ifeq "$(wildcard $(commands_recovery_local_path)/gui/devices/$(DEVICE_RESOLUTION))" ""
-$(warning ********************************************************************************)
-$(warning * DEVICE_RESOLUTION ($(DEVICE_RESOLUTION)) does NOT EXIST in $(commands_recovery_local_path)/gui/devices )
-$(warning * Please choose an existing theme or create a new one for your device )
-$(warning ********************************************************************************)
-$(error stopping)
+ifeq ($(TW_CUSTOM_THEME),)
+	ifeq "$(wildcard $(commands_recovery_local_path)/gui/devices/$(DEVICE_RESOLUTION))" ""
+	$(warning ********************************************************************************)
+	$(warning * DEVICE_RESOLUTION ($(DEVICE_RESOLUTION)) does NOT EXIST in $(commands_recovery_local_path)/gui/devices )
+	$(warning * Please choose an existing theme or create a new one for your device )
+	$(warning ********************************************************************************)
+	$(error stopping)
+	endif
 endif
 
 LOCAL_C_INCLUDES += bionic external/stlport/stlport $(commands_recovery_local_path)/gui/devices/$(DEVICE_RESOLUTION)
@@ -104,6 +109,13 @@ ifeq ($(TW_CUSTOM_THEME),)
 else
 	TWRP_THEME_LOC := $(TW_CUSTOM_THEME)
 endif
+
+ifeq ($(TW_DISABLE_TTF), true)
+	TWRP_REMOVE_FONT := rm -f $(TARGET_RECOVERY_ROOT_OUT)/res/fonts/*.ttf
+else
+	TWRP_REMOVE_FONT := rm -f $(TARGET_RECOVERY_ROOT_OUT)/res/fonts/*.dat
+endif
+
 TWRP_RES_GEN := $(intermediates)/twrp
 ifneq ($(TW_USE_TOOLBOX), true)
 	TWRP_SH_TARGET := /sbin/busybox
@@ -116,6 +128,7 @@ $(TWRP_RES_GEN):
 	cp -fr $(TWRP_RES_LOC)/* $(TARGET_RECOVERY_ROOT_OUT)/res/
 	cp -fr $(TWRP_THEME_LOC)/* $(TARGET_RECOVERY_ROOT_OUT)/res/
 	$(TWRP_COMMON_XML)
+	$(TWRP_REMOVE_FONT)
 	mkdir -p $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	ln -sf $(TWRP_SH_TARGET) $(TARGET_RECOVERY_ROOT_OUT)/sbin/sh
 	ln -sf /sbin/pigz $(TARGET_RECOVERY_ROOT_OUT)/sbin/gzip
